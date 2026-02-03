@@ -1,15 +1,17 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
-import dj_database_url  # for production-ready database URLs
+import dj_database_url
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY
-SECRET_KEY = os.getenv("SECRET_KEY")
-DEBUG = os.getenv("DEBUG") == "True"
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-local-secret")
+DEBUG = os.getenv("DEBUG", "True") == "True"
+
+# ALLOWED_HOSTS
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # Application definition
@@ -28,7 +30,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # For serving static files in production
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # production static files
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -57,10 +59,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'hrms.wsgi.application'
 
-# Database (PostgreSQL for production)
+# Database
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.getenv("DATABASE_URL")  # Example: postgres://user:pass@host:port/dbname
+        default=os.getenv("DATABASE_URL") or "postgresql://postgres:root@localhost:5432/hrms_db"
     )
 }
 
@@ -80,18 +82,26 @@ USE_TZ = True
 
 # Static files
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"  # Where collectstatic will collect
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files (if you have uploads)
+# Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / "media"
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL", "True") == "True"
-CORS_ALLOW_CREDENTIALS = True
+if DEBUG:
+    # Local development
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOW_CREDENTIALS = True
+else:
+    # Production
+    CORS_ALLOWED_ORIGINS = [
+        "https://hrms-frontend-rosy-kappa.vercel.app",
+    ]
+    CORS_ALLOW_CREDENTIALS = True
 
-# REST Framework (optional)
+# REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
